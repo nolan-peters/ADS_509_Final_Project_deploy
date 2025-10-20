@@ -28,11 +28,13 @@ def load_xgboost():
 def load_model_info():
     return joblib.load("model_info.pkl")
 
-# Load all models
-word_model, char_model = load_ensemble()
-svr_cv_model = load_svr_cv()
-xgb_model = load_xgboost()
+# Load model info first (lightweight)
 model_info = load_model_info()
+
+# Load models only when needed (lazy loading)
+word_model, char_model = None, None
+svr_cv_model = None
+xgb_model = None
 
 
 # ------------------------------------------------------
@@ -169,18 +171,32 @@ st.markdown("""
 # ------------------------------------------------------
 
 def predict_with_selected_model(text, model_name):
+    global word_model, char_model, svr_cv_model, xgb_model
+    
     if model_name == "ensemble_svr":
+        if word_model is None or char_model is None:
+            with st.spinner("Loading ensemble model..."):
+                word_model, char_model = load_ensemble()
         word_pred = word_model.predict([text])
         char_pred = char_model.predict([text])
         return (word_pred + char_pred) / 2.0
     
     elif model_name == "svr_cv":
+        if svr_cv_model is None:
+            with st.spinner("Loading SVR model..."):
+                svr_cv_model = load_svr_cv()
         return svr_cv_model.predict([text])
     
     elif model_name == "xgboost":
+        if xgb_model is None:
+            with st.spinner("Loading XGBoost model..."):
+                xgb_model = load_xgboost()
         return xgb_model.predict([text])
     
     else:
+        if svr_cv_model is None:
+            with st.spinner("Loading SVR model..."):
+                svr_cv_model = load_svr_cv()
         return svr_cv_model.predict([text]) 
 
 # ------------------------------------------------------
