@@ -13,7 +13,7 @@ st.set_page_config(page_title="🎥 AI Movie Rating Predictor", layout="centered
 # ------------------------------------------------------
 @st.cache_resource
 def load_ensemble():
-    models = joblib.load("ensemble_models.pkl")
+    models = joblib.load("ensemble_models.pkl", mmap_mode='r')
     return models["word_model"], models["char_model"]
 
 # @st.cache_resource  
@@ -22,7 +22,7 @@ def load_ensemble():
 
 @st.cache_resource
 def load_xgboost():
-    return joblib.load("xgboost_model.pkl")
+    return joblib.load("xgboost_model.pkl", mmap_mode='r')
 
 @st.cache_resource
 def load_model_info():
@@ -31,9 +31,8 @@ def load_model_info():
 # Load model info first (lightweight)
 model_info = load_model_info()
 
-# Load models only when needed (lazy loading)
+# Initialize model variables (lazy loading)
 word_model, char_model = None, None
-# svr_cv_model = None  # Removed for testing
 xgb_model = None
 
 
@@ -209,6 +208,10 @@ if "predicted_rating" not in st.session_state:
 # ------------------------------------------------------
 st.markdown("<h1>🎥 AI Movie Rating Predictor</h1>", unsafe_allow_html=True)
 st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+
+# Show loading status
+if word_model is None and xgb_model is None:
+    st.info("🚀 App is ready! Models will load when you make your first prediction.")
 
 
 # Movie selection

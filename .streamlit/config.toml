@@ -2,9 +2,18 @@
 maxUploadSize = 200
 enableCORS = false
 enableXsrfProtection = false
+headless = true
 
 [runner]
 fastReruns = true
+enforceSerializableSessionState = false
 
 [browser]
 gatherUsageStats = false
+serverAddress = "0.0.0.0"
+
+[logger]
+level = "error"
+
+[client]
+showErrorDetails = false
