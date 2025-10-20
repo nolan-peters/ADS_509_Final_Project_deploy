@@ -16,9 +16,9 @@ def load_ensemble():
     models = joblib.load("ensemble_models.pkl")
     return models["word_model"], models["char_model"]
 
-@st.cache_resource  
-def load_svr_cv():
-    return joblib.load("svr_cv_model.pkl")
+# @st.cache_resource  
+# def load_svr_cv():
+#     return joblib.load("svr_cv_model.pkl")
 
 @st.cache_resource
 def load_xgboost():
@@ -33,7 +33,7 @@ model_info = load_model_info()
 
 # Load models only when needed (lazy loading)
 word_model, char_model = None, None
-svr_cv_model = None
+# svr_cv_model = None  # Removed for testing
 xgb_model = None
 
 
@@ -52,10 +52,12 @@ movies = [
 # ------------------------------------------------------
 
 st.sidebar.header("🤖 Model Selection")
+# Filter out svr_cv model for testing
+available_models = {k: v for k, v in model_info.items() if k != "svr_cv"}
 selected_model = st.sidebar.selectbox(
     "Choose your prediction model:",
-    options=list(model_info.keys()),
-    format_func=lambda x: model_info[x]
+    options=list(available_models.keys()),
+    format_func=lambda x: available_models[x]
 )
 
 # ------------------------------------------------------
@@ -171,7 +173,7 @@ st.markdown("""
 # ------------------------------------------------------
 
 def predict_with_selected_model(text, model_name):
-    global word_model, char_model, svr_cv_model, xgb_model
+    global word_model, char_model, xgb_model
     
     if model_name == "ensemble_svr":
         if word_model is None or char_model is None:
@@ -181,12 +183,6 @@ def predict_with_selected_model(text, model_name):
         char_pred = char_model.predict([text])
         return (word_pred + char_pred) / 2.0
     
-    elif model_name == "svr_cv":
-        if svr_cv_model is None:
-            with st.spinner("Loading SVR model..."):
-                svr_cv_model = load_svr_cv()
-        return svr_cv_model.predict([text])
-    
     elif model_name == "xgboost":
         if xgb_model is None:
             with st.spinner("Loading XGBoost model..."):
@@ -194,10 +190,11 @@ def predict_with_selected_model(text, model_name):
         return xgb_model.predict([text])
     
     else:
-        if svr_cv_model is None:
-            with st.spinner("Loading SVR model..."):
-                svr_cv_model = load_svr_cv()
-        return svr_cv_model.predict([text]) 
+        # Default to XGBoost if model not found
+        if xgb_model is None:
+            with st.spinner("Loading XGBoost model..."):
+                xgb_model = load_xgboost()
+        return xgb_model.predict([text]) 
 
 # ------------------------------------------------------
 # SESSION STATE
@@ -247,11 +244,11 @@ else:
                     if isinstance(step, (TfidfVectorizer, CountVectorizer)):
                         vectorizer = step
                         break
-            elif selected_model == "svr_cv":
-                for name, step in svr_cv_model.named_steps.items():
-                    if isinstance(step, (TfidfVectorizer, CountVectorizer)):
-                        vectorizer = step
-                        break
+            # elif selected_model == "svr_cv":  # Removed for testing
+            #     for name, step in svr_cv_model.named_steps.items():
+            #         if isinstance(step, (TfidfVectorizer, CountVectorizer)):
+            #             vectorizer = step
+            #             break
             elif selected_model == "xgboost":
                 for name, step in xgb_model.named_steps.items():
                     if isinstance(step, (TfidfVectorizer, CountVectorizer)):
