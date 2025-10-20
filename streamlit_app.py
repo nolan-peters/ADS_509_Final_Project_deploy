@@ -244,10 +244,11 @@ else:
         else:
             vectorizer = None
             if selected_model == "ensemble_svr":
-                for name, step in word_model.named_steps.items():
-                    if isinstance(step, (TfidfVectorizer, CountVectorizer)):
-                        vectorizer = step
-                        break
+                if word_model is not None and hasattr(word_model, 'named_steps') and SKLEARN_AVAILABLE:
+                    for name, step in word_model.named_steps.items():
+                        if isinstance(step, (TfidfVectorizer, CountVectorizer)):
+                            vectorizer = step
+                            break
             # elif selected_model == "svr_cv":  # Removed for testing
             #     for name, step in svr_cv_model.named_steps.items():
             #         if isinstance(step, (TfidfVectorizer, CountVectorizer)):
