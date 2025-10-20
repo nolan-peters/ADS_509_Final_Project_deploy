@@ -51,12 +51,13 @@ movies = [
 # ------------------------------------------------------
 
 st.sidebar.header("🤖 Model Selection")
-# Filter out svr_cv model for testing
-available_models = {k: v for k, v in model_info.items() if k != "svr_cv"}
+# Start with just ensemble model for faster deployment
+available_models = {"ensemble_svr": "Ensemble SVR (Word + Char)"}
 selected_model = st.sidebar.selectbox(
     "Choose your prediction model:",
     options=list(available_models.keys()),
-    format_func=lambda x: available_models[x]
+    format_func=lambda x: available_models[x],
+    index=0
 )
 
 # ------------------------------------------------------
@@ -183,17 +184,17 @@ def predict_with_selected_model(text, model_name):
         return (word_pred + char_pred) / 2.0
     
     elif model_name == "xgboost":
-        if xgb_model is None:
-            with st.spinner("Loading XGBoost model..."):
-                xgb_model = load_xgboost()
-        return xgb_model.predict([text])
+        st.error("XGBoost model temporarily unavailable for faster deployment")
+        return [5.0]  # Default rating
     
     else:
-        # Default to XGBoost if model not found
-        if xgb_model is None:
-            with st.spinner("Loading XGBoost model..."):
-                xgb_model = load_xgboost()
-        return xgb_model.predict([text]) 
+        # Default to ensemble if model not found
+        if word_model is None or char_model is None:
+            with st.spinner("Loading ensemble model..."):
+                word_model, char_model = load_ensemble()
+        word_pred = word_model.predict([text])
+        char_pred = char_model.predict([text])
+        return (word_pred + char_pred) / 2.0 
 
 # ------------------------------------------------------
 # SESSION STATE
@@ -253,10 +254,8 @@ else:
             #             vectorizer = step
             #             break
             elif selected_model == "xgboost":
-                for name, step in xgb_model.named_steps.items():
-                    if isinstance(step, (TfidfVectorizer, CountVectorizer)):
-                        vectorizer = step
-                        break
+                st.error("XGBoost model temporarily unavailable")
+                vectorizer = None
                     
             if vectorizer is not None:
                 vec = vectorizer.transform([cleaned_review])
